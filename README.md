@@ -1,1 +1,1 @@
-# RIP API Document
+# Receipt Mate API Document

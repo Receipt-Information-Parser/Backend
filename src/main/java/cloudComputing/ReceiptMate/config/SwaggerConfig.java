@@ -25,7 +25,7 @@ public class SwaggerConfig {
 
     public ApiInfo apiInfo() {
         return new ApiInfoBuilder()
-            .title("Walkreen API Document")
+            .title("Receipt Mate API Document")
             .version("1.0")
             .description("Spring Boot Rest API")
             .build();
