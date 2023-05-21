@@ -41,6 +41,21 @@ public class PictureController {
         return minioService.list();
     }
 
+    @PostMapping(value = "/save", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<PictureResponse> save(@RequestPart("file") MultipartFile file, HttpServletRequest httpServletRequest) {
+        PictureResponse pictureResponse = null;
+
+        try {
+            pictureResponse = pictureService.save(file, httpServletRequest);
+            if (pictureResponse == null) throw new Exception();
+        } catch (UnsupportedEncodingException uee) {
+            uee.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return ResponseEntity.ok().body(pictureResponse);
+    }
 
     @GetMapping("/{object}")
     public void getObject(@PathVariable("object") String object, HttpServletResponse response) throws MinioException, IOException {
