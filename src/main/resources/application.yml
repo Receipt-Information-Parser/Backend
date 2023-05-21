@@ -1,0 +1,6 @@
+server:
+  port: 19983  # Spring boot Server port
+
+spring:
+  profiles:
+    active: dev
