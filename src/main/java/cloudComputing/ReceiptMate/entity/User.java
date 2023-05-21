@@ -41,6 +41,8 @@ public class User {
 
     private Date birthday;
 
+    private String profileImage;
+
     @Enumerated(EnumType.STRING)
     private Authority authority = Authority.USER;
 
