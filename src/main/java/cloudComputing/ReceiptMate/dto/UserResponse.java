@@ -28,10 +28,6 @@ public class UserResponse {
 
     private Date birthday;
 
-    private Integer prepoint;
-
-    private Integer accpoint;
-
     @Setter
     private TokenResponse tokenResponse;
 }

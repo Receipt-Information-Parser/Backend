@@ -2,6 +2,7 @@ package cloudComputing.ReceiptMate.service;
 
 import cloudComputing.ReceiptMate.dto.EmailRequest;
 import cloudComputing.ReceiptMate.dto.LogInRequest;
+import cloudComputing.ReceiptMate.dto.NicknameRequest;
 import cloudComputing.ReceiptMate.dto.SignUpRequest;
 import cloudComputing.ReceiptMate.dto.StringResponse;
 import cloudComputing.ReceiptMate.dto.UserMapper;
@@ -15,6 +16,7 @@ import cloudComputing.ReceiptMate.entity.User;
 import cloudComputing.ReceiptMate.exception.InvalidPasswordException;
 import cloudComputing.ReceiptMate.repository.UserRepository;
 import cloudComputing.ReceiptMate.util.PasswordUtil;
+import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,13 @@ public class UserService {
 
         return new StringResponse("사용가능한 이메일입니다");
     }
+
+    public StringResponse checkNicknameAvailability(NicknameRequest nicknameRequest) {
+        if (userRepository.existsByNickname(nicknameRequest.getNickname())) throw new DuplicateNicknameException();
+
+        return new StringResponse("사용가능한 닉네임입니다");
+    }
+
 
     @Transactional
     public UserResponse signUp(SignUpRequest signUpRequest) {
@@ -80,8 +89,29 @@ public class UserService {
         return new StringResponse("해당 계정의 이메일로 임시 비밀번호를 발송하였습니다");
     }
 
+    public StringResponse getEmail(NicknameRequest nicknameRequest) {
+
+        final User user = userRepository.findUserByNickname(nicknameRequest.getNickname()).orElseThrow(InvalidUserException::new);
+
+        return new StringResponse(user.getEmail());
+    }
+
+    public UserResponse modifyNickname(NicknameRequest nicknameRequest, HttpServletRequest httpServletRequest) {
+        checkNicknameAvailability(nicknameRequest);
+
+        User userByToken = authService.getUserByToken(httpServletRequest);
+
+        userByToken.setNickname(nicknameRequest.getNickname());
+
+        final User saved = userRepository.save(userByToken);
+
+        UserResponse userResponse = UserMapper.INSTANCE.userToResponse(userByToken);
+        userResponse.setTokenResponse(jwtUtil.generateToken(getTokenInfo(userByToken)));
+
+        return userResponse;
+    }
+
     private TokenInfo getTokenInfo(User user) { // 이거 JwtUtil로 돌릴지
         return new TokenInfo(user.getId(), user.getEmail(), user.getAuthority());
     }
-
 }
