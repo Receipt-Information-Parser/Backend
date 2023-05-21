@@ -1,6 +1,12 @@
 package cloudComputing.ReceiptMate.controller;
 
 import cloudComputing.ReceiptMate.dto.PictureResponse;
+import cloudComputing.ReceiptMate.entity.User;
+import cloudComputing.ReceiptMate.exception.InvalidObjectException;
+import cloudComputing.ReceiptMate.exception.InvalidProfileException;
+import cloudComputing.ReceiptMate.exception.InvalidUserException;
+import cloudComputing.ReceiptMate.repository.UserRepository;
+import cloudComputing.ReceiptMate.service.AuthService;
 import cloudComputing.ReceiptMate.service.PictureService;
 import com.google.api.client.util.IOUtils;
 import com.jlefebure.spring.boot.minio.MinioException;
@@ -35,13 +41,15 @@ public class PictureController {
     @Autowired
     private final MinioService minioService;
     private final PictureService pictureService;
+    private final AuthService authService;
+    private final UserRepository userRepository;
 
     @GetMapping("/list")
     public List<Item> photoList() throws MinioException {
         return minioService.list();
     }
 
-    @PostMapping(value = "/save", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @PostMapping(value = "/save", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<PictureResponse> save(@RequestPart("file") MultipartFile file, HttpServletRequest httpServletRequest) {
         PictureResponse pictureResponse = null;
 
@@ -58,7 +66,14 @@ public class PictureController {
     }
 
     @GetMapping("/{object}")
-    public void getObject(@PathVariable("object") String object, HttpServletResponse response) throws MinioException, IOException {
+    public void getObject(@PathVariable("object") String object, HttpServletResponse response, HttpServletRequest httpServletRequest) throws MinioException, IOException {
+        Long id1 = authService.getUserByToken(httpServletRequest).getId();
+
+        Long id2 = userRepository.findUserByProfileImage(object).orElseThrow(
+            InvalidObjectException::new).getId();
+
+        if (id1 != id2) throw new InvalidProfileException();
+
         InputStream inputStream = minioService.get(Path.of(object));
         InputStreamResource inputStreamResource = new InputStreamResource(inputStream);
 
