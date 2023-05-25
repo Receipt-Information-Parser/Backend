@@ -55,6 +55,18 @@ public class ReceiptService {
     }
 
     public List<ReceiptResponse> listReceipt(HttpServletRequest httpServletRequest) {
-        return new ArrayList<>();
+        final User userByToken = authService.getUserByToken(httpServletRequest);
+
+        List<Receipt> allReceiptsByOwner = receiptRepository.findAllByOwner(userByToken);
+
+        if (allReceiptsByOwner.isEmpty()) throw new InvalidOwnerException();
+
+        List<ReceiptResponse> receiptResponses = new ArrayList<>();
+
+        for (Receipt receipt : allReceiptsByOwner) {
+            receiptResponses.add(new ReceiptResponse(receipt.getDetailKey()));
+        }
+
+        return receiptResponses;
     }
 }
