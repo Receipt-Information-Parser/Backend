@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
+
+    Optional<Receipt> findReceiptByOwner(Long ownerId);
 }

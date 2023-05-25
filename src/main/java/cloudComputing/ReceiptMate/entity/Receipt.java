@@ -25,12 +25,7 @@ import org.hibernate.annotations.DynamicUpdate;
 @DynamicUpdate
 @Setter
 
-public class Receipt {
-
-    @Id
-    @GeneratedValue
-    private Long id;
-    private Date date;
+public class Receipt extends BaseEntity {
 
     private String detailKey;
 
