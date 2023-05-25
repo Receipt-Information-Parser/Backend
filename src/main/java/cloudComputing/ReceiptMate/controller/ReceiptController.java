@@ -8,8 +8,11 @@ import cloudComputing.ReceiptMate.dto.ReceiptResponse;
 import cloudComputing.ReceiptMate.dto.SignUpRequest;
 import cloudComputing.ReceiptMate.dto.StringResponse;
 import cloudComputing.ReceiptMate.dto.UserResponse;
+import cloudComputing.ReceiptMate.entity.User;
 import cloudComputing.ReceiptMate.exception.InvalidObjectException;
 import cloudComputing.ReceiptMate.exception.InvalidProfileException;
+import cloudComputing.ReceiptMate.exception.InvalidReceiptUserException;
+import cloudComputing.ReceiptMate.repository.ReceiptRepository;
 import cloudComputing.ReceiptMate.repository.UserRepository;
 import cloudComputing.ReceiptMate.service.AuthService;
 import cloudComputing.ReceiptMate.service.ReceiptService;
@@ -51,6 +54,7 @@ public class ReceiptController {
     private final ReceiptService receiptService;
     private final AuthService authService;
     private final UserRepository userRepository;
+    private final ReceiptRepository receiptRepository;
 
     @PostMapping(value = "/add", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ReceiptResponse> addReceipt(@RequestPart("file") MultipartFile file, HttpServletRequest httpServletRequest) {
@@ -75,12 +79,11 @@ public class ReceiptController {
 
     @GetMapping("/{object}")
     public void getObject(@PathVariable("object") String object, HttpServletResponse response, HttpServletRequest httpServletRequest) throws MinioException, IOException {
-        Long id1 = authService.getUserByToken(httpServletRequest).getId();
+        final User owner = receiptRepository.findReceiptByDetailKey(object).orElseThrow(InvalidObjectException::new).getOwner();
 
-        Long id2 = userRepository.findUserByProfileImage(object).orElseThrow(
-            InvalidObjectException::new).getId();
+        Long id = authService.getUserByToken(httpServletRequest).getId();
 
-        if (id1 != id2) throw new InvalidProfileException();
+        if (owner.getId() != id) throw new InvalidReceiptUserException();
 
         InputStream inputStream = minioService.get(Path.of(object));
         InputStreamResource inputStreamResource = new InputStreamResource(inputStream);
