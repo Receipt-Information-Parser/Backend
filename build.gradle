@@ -51,6 +51,9 @@ dependencies {
 
 	// filenameutils
 	implementation 'commons-io:commons-io:2.11.0'
+
+	// MockMultipartFile
+	implementation 'org.springframework:spring-test:5.3.10'
 }
 
 test {

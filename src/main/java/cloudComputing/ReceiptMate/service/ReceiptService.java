@@ -13,7 +13,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
@@ -22,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,7 +43,28 @@ public class ReceiptService {
     public ReceiptResponse addReceipt(MultipartFile file, HttpServletRequest httpServletRequest)
         throws UnsupportedEncodingException {
 
-        final String receiptKey = fileService.upload(file);
+        // API 호출 DUMMY
+        if (file.getOriginalFilename().compareTo("test.jpg") != 0) {
+            System.out.println("file.getOriginalFilename() = " + file.getOriginalFilename());
+            return new ReceiptResponse("");
+        }
+
+        Path path = Paths.get("D:\\CS\\RIP\\Backend\\src\\main\\resources\\test.csv");
+        String name = "test.csv";
+        String originalFileName = "test.csv";
+        String contentType = "text/plain";
+        byte[] content = null;
+        try {
+            content = Files.readAllBytes(path);
+        } catch (final IOException e) {
+        }
+        MultipartFile output = new MockMultipartFile(name, originalFileName, contentType, content);
+
+        int total = 1700;
+
+        ////////////////////////////////////////////
+
+        final String receiptKey = fileService.upload(output);
 
         final User userByToken = authService.getUserByToken(httpServletRequest);
 
