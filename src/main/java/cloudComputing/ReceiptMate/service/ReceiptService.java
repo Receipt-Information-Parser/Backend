@@ -323,4 +323,14 @@ public class ReceiptService {
 
         return new ListReceiptResponses(receiptResponses);
     }
+
+    public StringResponse deleteReceipt(Long id, HttpServletRequest httpServletRequest) {
+        final User userByToken = authService.getUserByToken(httpServletRequest);
+
+        Receipt receipt = receiptRepository.findByOwnerAndId(userByToken, id).orElseThrow(InvalidReceiptUserException::new);
+
+        receiptRepository.delete(receipt);
+
+        return new StringResponse("영수증을 삭제했습니다");
+    }
 }
