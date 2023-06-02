@@ -44,11 +44,6 @@ public class PictureController {
     private final AuthService authService;
     private final UserRepository userRepository;
 
-    @GetMapping("/list")
-    public List<Item> photoList() throws MinioException {
-        return minioService.list();
-    }
-
     @PostMapping(value = "/save", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<PictureResponse> save(@RequestPart("file") MultipartFile file, HttpServletRequest httpServletRequest) {
         PictureResponse pictureResponse = null;
