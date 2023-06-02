@@ -49,6 +49,6 @@ public class User {
     @OneToMany(mappedBy = "owner")
     private List<Receipt> receipts = new ArrayList<>();
 
-    @OneToMany(mappedBy = "owner")
-    private List<Analysis> analyses = new ArrayList<>();
+    @OneToOne(mappedBy = "owner")
+    private Analysis analysis;
 }

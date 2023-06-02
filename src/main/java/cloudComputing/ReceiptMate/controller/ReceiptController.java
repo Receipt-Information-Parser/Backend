@@ -1,13 +1,6 @@
 package cloudComputing.ReceiptMate.controller;
 
-import cloudComputing.ReceiptMate.dto.EmailRequest;
-import cloudComputing.ReceiptMate.dto.LogInRequest;
-import cloudComputing.ReceiptMate.dto.NicknameRequest;
-import cloudComputing.ReceiptMate.dto.PictureResponse;
-import cloudComputing.ReceiptMate.dto.ReceiptResponse;
-import cloudComputing.ReceiptMate.dto.SignUpRequest;
-import cloudComputing.ReceiptMate.dto.StringResponse;
-import cloudComputing.ReceiptMate.dto.UserResponse;
+import cloudComputing.ReceiptMate.dto.*;
 import cloudComputing.ReceiptMate.entity.User;
 import cloudComputing.ReceiptMate.exception.InvalidObjectException;
 import cloudComputing.ReceiptMate.exception.InvalidProfileException;
@@ -34,14 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -72,8 +58,28 @@ public class ReceiptController {
         return ResponseEntity.ok().body(receiptResponse);
     }
 
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<StringResponse> deleteReceipt(@PathVariable("id") Long id, HttpServletRequest httpServletRequest) {
+        return ResponseEntity.ok().body(receiptService.deleteReceipt(id, httpServletRequest));
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<ReceiptResponse> updateReceipt(ReceiptUpdateRequest receiptUpdateRequest, HttpServletRequest httpServletRequest) {
+        ReceiptResponse receiptResponse = null;
+
+        try {
+            receiptResponse = receiptService.updateReceipt(httpServletRequest, receiptUpdateRequest);
+        } catch (IOException ioException) {
+            ioException.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return ResponseEntity.ok().body(receiptResponse);
+    }
+
     @GetMapping("/list")
-    public ResponseEntity<List<ReceiptResponse>> listReceipt(HttpServletRequest httpServletRequest) {
+    public ResponseEntity<ListReceiptResponses> listReceipt(HttpServletRequest httpServletRequest) {
         return ResponseEntity.ok().body(receiptService.listReceipt(httpServletRequest));
     }
 

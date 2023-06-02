@@ -1,4 +1,5 @@
 application-dev.yml
+test.*
 
 HELP.md
 .gradle
