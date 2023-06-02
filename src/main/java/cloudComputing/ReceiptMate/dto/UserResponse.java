@@ -1,10 +1,16 @@
 package cloudComputing.ReceiptMate.dto;
 
 import cloudComputing.ReceiptMate.auth.TokenResponse;
+import cloudComputing.ReceiptMate.entity.Analysis;
+import cloudComputing.ReceiptMate.entity.Receipt;
+import cloudComputing.ReceiptMate.enumerations.Authority;
 import cloudComputing.ReceiptMate.enumerations.Gender;
+
+import java.util.ArrayList;
 import java.util.Date;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
+import java.util.List;
+import javax.persistence.*;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,4 +36,7 @@ public class UserResponse {
 
     @Setter
     private TokenResponse tokenResponse;
+
+    private String profileImage;
+
 }
