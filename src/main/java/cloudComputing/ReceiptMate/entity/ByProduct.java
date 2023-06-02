@@ -1,6 +1,5 @@
 package cloudComputing.ReceiptMate.entity;
 
-import java.util.Date;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -8,7 +7,6 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 
-import cloudComputing.ReceiptMate.dto.ByProductDTO;
 import cloudComputing.ReceiptMate.enumerations.QuantityType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,7 +35,7 @@ public class ByProduct {
 
     private Integer month;
 
-    private Integer date;
+    private Integer day;
 
     private Float quantity;
 

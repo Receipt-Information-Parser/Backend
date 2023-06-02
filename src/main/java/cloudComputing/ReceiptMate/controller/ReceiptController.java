@@ -64,7 +64,7 @@ public class ReceiptController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<ReceiptResponse> updateReceipt(ReceiptUpdateRequest receiptUpdateRequest, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<ReceiptResponse> updateReceipt(@RequestBody ReceiptUpdateRequest receiptUpdateRequest, HttpServletRequest httpServletRequest) {
         ReceiptResponse receiptResponse = null;
 
         try {

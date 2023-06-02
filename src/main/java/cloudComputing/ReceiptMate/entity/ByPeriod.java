@@ -1,6 +1,5 @@
 package cloudComputing.ReceiptMate.entity;
 
-import java.util.Date;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -32,7 +31,7 @@ public class ByPeriod {
 
     private Integer month;
 
-    private Integer date;
+    private Integer day;
 
     private Integer amount;
 

@@ -14,22 +14,44 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.gson.Gson;
+import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
+import java.net.http.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.BasicHttpEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.FileEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.CDL;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.channels.Channels;
+import java.nio.channels.Pipe;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.Null;
 
 import lombok.RequiredArgsConstructor;
-import org.json.JSONArray;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import static org.apache.commons.io.FileUtils.copyInputStreamToFile;
 
 @Service
 @RequiredArgsConstructor
@@ -50,33 +72,53 @@ public class ReceiptService {
     private final AnalysisRepository analysisRepository;
 
     public ReceiptResponse addReceipt(MultipartFile file, HttpServletRequest httpServletRequest)
-            throws IOException {
+            throws IOException, URISyntaxException, InterruptedException {
 
         // check file if not image
+
         String filename = file.getOriginalFilename();
         if (!Files.probeContentType(Paths.get(filename)).startsWith("image")) {
             System.out.println("file.getOriginalFilename() = " + file.getOriginalFilename());
             return new ReceiptResponse();
         }
 
-        // API 호출 DUMMY
+        HttpClient httpClient = HttpClient.newHttpClient();
 
-        URL dummy = new URL("http://localhost:9999");
+        InputStream inputStream = file.getInputStream();
 
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        InputStream is;
+        File tempFile = File.createTempFile(String.valueOf(inputStream.hashCode()), ".tmp");
+        tempFile.deleteOnExit();
 
-        is = dummy.openStream ();
-        byte[] byteChunk = new byte[4096]; // Or whatever size you want to read in at a time.
-        int n;
+        copyInputStreamToFile(inputStream, tempFile);
 
-        while ( (n = is.read(byteChunk)) > 0 ) {
-            byteArrayOutputStream.write(byteChunk, 0, n);
-        }
-        
-        byte[] content = byteArrayOutputStream.toByteArray();
+        HttpEntity httpEntity = MultipartEntityBuilder.create()
+                // FILE
+                .addBinaryBody("file", tempFile, ContentType.IMAGE_JPEG,
+                        "file.jpg")
+                .build();
 
-        String contentString =  new String(content, "UTF-8");
+        Pipe pipe = Pipe.open();
+
+        new Thread(() -> {
+            try (OutputStream outputStream = Channels.newOutputStream(pipe.sink())) {
+                // Write the encoded data to the pipeline.
+                httpEntity.writeTo(outputStream);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }).start();
+
+
+        HttpRequest request = HttpRequest.newBuilder(new URI("http://localhost:9999"))
+                .header("Content-Type", httpEntity.getContentType().getValue())
+                .POST(HttpRequest.BodyPublishers.ofInputStream(() -> Channels.newInputStream(pipe.source()))).build();
+
+        HttpResponse<String> responseBody = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+        String contentString = new String(responseBody.body().getBytes("EUC-KR"), StandardCharsets.UTF_8);
+
+        System.out.println("contentString = " + contentString);
         Map<String, Object> jsonMap = new ObjectMapper().readValue(contentString, new TypeReference<>(){});
 
         Map<String, String> info = (LinkedHashMap) ((ArrayList) jsonMap.get("key_value")).get(0);
@@ -126,7 +168,15 @@ public class ReceiptService {
             
             byProductDTOs.add(byProductDTO);
         }
-        Integer total = (Integer) jsonMap.get("total");
+        //Integer total = (Integer) jsonMap.get("total");
+
+
+        //// rancom total
+        Integer[] available_totals = {1200, 1300, 3100, 2220, 7210, 1350, 10200, 8110, 29010, 4770, 13450, 74490, 3500, 6600};
+        java.util.Random random = new java.util.Random();
+        int random_computer_card = random.nextInt(available_totals.length);
+        Integer total = available_totals[random_computer_card];
+
 
         ////////////////////////////////////////////
 
@@ -144,7 +194,19 @@ public class ReceiptService {
             analysis = analysisRepository.findByOwner(userByToken).orElseThrow(NotFoundException::new);
         }
 
-        Date now = Date.from(Instant.now());
+        //Date now = Date.from(Instant.now());
+
+        // random date
+        Instant twoYearsAgo = Instant.now().minus(Duration.ofDays(2 * 365));
+        Instant tenDaysAgo = Instant.now().minus(Duration.ofDays(10));
+
+        long startSeconds = twoYearsAgo.getEpochSecond();
+        long endSeconds = tenDaysAgo.getEpochSecond();
+        long randomDate = ThreadLocalRandom
+                .current()
+                .nextLong(startSeconds, endSeconds);
+
+        Date now = Date.from(Instant.ofEpochSecond(randomDate));
 
         Calendar cal = Calendar.getInstance();
         cal.setTime(now);
@@ -164,7 +226,7 @@ public class ReceiptService {
         ByPeriod byPeriod = ByPeriod.builder()
                 .year(year)
                 .month(month)
-                .date(date)
+                .day(date)
                 .amount(total)
                 .analysis(analysis)
                 .originalReceiptId(saved.getId())
@@ -182,7 +244,7 @@ public class ReceiptService {
                     .analysis(analysis)
                     .year(year)
                     .month(month)
-                    .date(date)
+                    .day(date)
                     .build();
             byProductRepository.save(byProduct);
         }
@@ -282,7 +344,7 @@ public class ReceiptService {
         ByPeriod byPeriod = ByPeriod.builder()
                 .year(year)
                 .month(month)
-                .date(date)
+                .day(date)
                 .amount(receiptUpdateRequest.getAmount())
                 .analysis(analysis)
                 .originalReceiptId(saved.getId())
@@ -300,7 +362,7 @@ public class ReceiptService {
                     .analysis(analysis)
                     .year(year)
                     .month(month)
-                    .date(date)
+                    .day(date)
                     .build();
             byProductRepository.save(byProduct);
         }
