@@ -30,6 +30,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation:2.6.4'
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'com.h2database:h2'
+	implementation 'org.json:json:20230227'
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.15.2'
+	implementation 'com.google.code.gson:gson:2.10.1'
+
 
 	// lombok
 	compileOnly 'org.projectlombok:lombok'
@@ -51,6 +55,9 @@ dependencies {
 
 	// filenameutils
 	implementation 'commons-io:commons-io:2.11.0'
+
+	// MockMultipartFile
+	implementation 'org.springframework:spring-test:5.3.10'
 }
 
 test {

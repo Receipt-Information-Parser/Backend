@@ -27,9 +27,16 @@ public class ByPeriod {
     @Id
     @GeneratedValue
     private Long id;
-    private Date period;
 
-    private String plotKey;
+    private Integer year;
+
+    private Integer month;
+
+    private Integer date;
+
+    private Integer amount;
+
+    private Long originalReceiptId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "analysis_id")
