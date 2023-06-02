@@ -45,6 +45,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.mock.web.MockMultipartFile;
@@ -129,7 +130,7 @@ public class ReceiptService {
         String originalFileName = "test.csv";
         String contentType = "text/plain";
 
-        MultipartFile output = new MockMultipartFile(name, originalFileName, contentType, ((String)jsonMap.get("csv")) .getBytes());
+        MultipartFile output = new MockMultipartFile(name, originalFileName, contentType, ((String)jsonMap.get("csv")).getBytes());
 
         List<ByProductDTO> byProductDTOs = new ArrayList<>();
 
@@ -294,8 +295,9 @@ public class ReceiptService {
         return stringResponse;
     }
 
+    @Transactional
     public ReceiptResponse updateReceipt(HttpServletRequest httpServletRequest, ReceiptUpdateRequest receiptUpdateRequest) throws IOException {
-        Receipt clone = receiptRepository.findByOwnerAndId(authService.getUserByToken(httpServletRequest), receiptUpdateRequest.getId()).orElseThrow(InvalidReceiptUserException::new);
+        Map<String, String> info = Map.copyOf(receiptRepository.findByOwnerAndId(authService.getUserByToken(httpServletRequest), receiptUpdateRequest.getId()).orElseThrow(InvalidReceiptUserException::new).getInfo());
 
         deleteReceipt(httpServletRequest, receiptUpdateRequest.getId());
 
@@ -304,9 +306,11 @@ public class ReceiptService {
         String contentType = "text/plain";
 
         Gson gson = new Gson();
-        String json = gson.toJson(receiptUpdateRequest.getByProductDTOList());
+        String json = new String(gson.toJson(receiptUpdateRequest.getByProductDTOList()).getBytes("EUC-KR"), StandardCharsets.UTF_8);
 
         String toCSV = jsonToCSV(json);
+
+        System.out.println("toCSV = " + toCSV);
 
         MultipartFile output = new MockMultipartFile(name, originalFileName, contentType, toCSV.getBytes());
 
@@ -314,15 +318,7 @@ public class ReceiptService {
 
         final User userByToken = authService.getUserByToken(httpServletRequest);
 
-        Analysis analysis;
-
-        if (!analysisRepository.existsByOwner(userByToken)) {
-            Analysis newAnalysis = new Analysis();
-            newAnalysis.setOwner(userByToken);
-            analysis = analysisRepository.save(newAnalysis);
-        } else {
-            analysis = analysisRepository.findByOwner(userByToken).orElseThrow(NotFoundException::new);
-        }
+        Analysis analysis = analysisRepository.findByOwner(userByToken).orElseThrow(NotFoundException::new);
 
         Date now = Date.from(Instant.now());
 
@@ -336,7 +332,7 @@ public class ReceiptService {
                 .owner(userByToken)
                 .detailKey(receiptKey)
                 .createdDate(now)
-                .info(clone.getInfo())
+                .info(info)
                 .build();
 
         Receipt saved = receiptRepository.save(receipt);
@@ -386,6 +382,7 @@ public class ReceiptService {
         return new ListReceiptResponses(receiptResponses);
     }
 
+    @Transactional
     public StringResponse deleteReceipt(Long id, HttpServletRequest httpServletRequest) {
         final User userByToken = authService.getUserByToken(httpServletRequest);
 
