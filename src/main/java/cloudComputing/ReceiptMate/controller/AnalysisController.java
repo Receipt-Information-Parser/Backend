@@ -43,7 +43,7 @@ public class AnalysisController {
         return ResponseEntity.ok().body(analysisService.getByDay(byPeriodRequest, httpServletRequest));
     }
 
-    @GetMapping("/product/{name}")
+    @PostMapping("/product")
     public ResponseEntity<ListByProductResponse> getByName(@RequestBody ByProductRequest byProductRequest, HttpServletRequest httpServletRequest) {
         return ResponseEntity.ok().body(analysisService.getByName(byProductRequest, httpServletRequest));
     }
