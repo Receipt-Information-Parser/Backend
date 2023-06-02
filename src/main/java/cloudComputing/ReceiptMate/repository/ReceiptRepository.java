@@ -14,4 +14,6 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
     List<Receipt> findAllByOwner(User owner);
 
     Optional<Receipt> findReceiptByDetailKey(String detailKey);
+
+    Optional<Receipt> findByOwnerAndId(User owner, Long id);
 }
