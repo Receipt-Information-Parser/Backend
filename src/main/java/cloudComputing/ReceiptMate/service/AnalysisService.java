@@ -20,6 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -44,16 +46,16 @@ public class AnalysisService {
         return analysis;
     }
 
-    public ListByPeriodResponse getByYear(ByPeriodRequest byPeriodRequest, HttpServletRequest httpServletRequest) {
-        List<ByPeriod> byPeriods = byPeriodRepository.findAllByYearAndAnalysis(byPeriodRequest.getYear(), getAnalysis(httpServletRequest));
+    public ListByPeriodResponse getByYear(HttpServletRequest httpServletRequest) {
+        List<ByPeriod> byPeriods = byPeriodRepository.findAllByAnalysis(getAnalysis(httpServletRequest));
         List<ByPeriodResponse> byPeriodResponses = byPeriods.parallelStream()
-                .map(byPeriod -> new ByPeriodResponse(byPeriod, byPeriodRequest.getYear()))
+                .map(ByPeriodResponse::new)
                 .collect(
                         Collectors.toMap(
-                                ByPeriodResponse::getDate,
+                                sum -> sum.getDate().getYear() + 1900,
                                 Function.identity(),
                                 (sum1, sum2) -> new ByPeriodResponse(
-                                        sum1.getDate(),
+                                        java.sql.Date.valueOf(LocalDate.of(sum1.getDate().getYear() + 1900, 1, 1)),
                                         sum1.getAmount() + sum2.getAmount(),
                                         sum1.getAnalysisId()
                                 )
@@ -71,16 +73,16 @@ public class AnalysisService {
         return listByPeriodResponse;
     }
 
-    public ListByPeriodResponse getByMonth(ByPeriodRequest byPeriodRequest, HttpServletRequest httpServletRequest) {
-        List<ByPeriod> byPeriods = byPeriodRepository.findAllByYearAndMonthAndAnalysis(byPeriodRequest.getYear(), byPeriodRequest.getMonth(), getAnalysis(httpServletRequest));
+    public ListByPeriodResponse getByMonth(HttpServletRequest httpServletRequest) {
+        List<ByPeriod> byPeriods = byPeriodRepository.findAllByAnalysis(getAnalysis(httpServletRequest));
         List<ByPeriodResponse> byPeriodResponses = byPeriods.parallelStream()
-                .map(byPeriod -> new ByPeriodResponse(byPeriod, byPeriodRequest.getYear(), byPeriodRequest.getMonth()))
+                .map(ByPeriodResponse::new)
                 .collect(
                         Collectors.toMap(
-                                ByPeriodResponse::getDate,
+                                sum -> (sum.getDate().getYear() + 1900) * 100 + sum.getDate().getMonth() + 1,
                                 Function.identity(),
                                 (sum1, sum2) -> new ByPeriodResponse(
-                                        sum1.getDate(),
+                                        java.sql.Date.valueOf(LocalDate.of(sum1.getDate().getYear() + 1900, sum1.getDate().getMonth() + 1, 1)),
                                         sum1.getAmount() + sum2.getAmount(),
                                         sum1.getAnalysisId()
                                 )
@@ -98,8 +100,10 @@ public class AnalysisService {
         return listByPeriodResponse;
     }
 
+    @Deprecated
     public ListByPeriodResponse getByDay(ByPeriodRequest byPeriodRequest, HttpServletRequest httpServletRequest) {
-        List<ByPeriod> byPeriods = byPeriodRepository.findAllByYearAndMonthAndDayAndAnalysis(byPeriodRequest.getYear(), byPeriodRequest.getMonth(), byPeriodRequest.getDay(), getAnalysis(httpServletRequest));
+        List<ByPeriod> byPeriods = byPeriodRepository.findAllByAnalysis(getAnalysis(httpServletRequest));
+
         List<ByPeriodResponse> byPeriodResponses = byPeriods.parallelStream()
                 .map(ByPeriodResponse::new)
                 .collect(
