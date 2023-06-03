@@ -14,6 +14,8 @@ public interface ByPeriodRepository extends JpaRepository<ByPeriod, Long> {
 
     List<ByPeriod> findAllByYearAndMonthAndDayAndAnalysis(Integer year, Integer month, Integer day, Analysis analysis);
 
+    List<ByPeriod> findAllByAnalysis(Analysis analysis);
+
     void deleteAllByOriginalReceiptId(Long originalReceiptId);
 
     Boolean existsByOriginalReceiptId(Long originalReceiptId);

@@ -28,20 +28,20 @@ public class AnalysisController {
 
     private final AnalysisService analysisService;
 
-    @PostMapping("/year")
-    public ResponseEntity<ListByPeriodResponse> getByYear(@RequestBody ByPeriodRequest byPeriodRequest, HttpServletRequest httpServletRequest) {
-        return ResponseEntity.ok().body(analysisService.getByYear(byPeriodRequest, httpServletRequest));
+    @GetMapping("/year")
+    public ResponseEntity<ListByPeriodResponse> getByYear(HttpServletRequest httpServletRequest) {
+        return ResponseEntity.ok().body(analysisService.getByYear(httpServletRequest));
     }
 
-    @PostMapping("/month")
-    public ResponseEntity<ListByPeriodResponse> getByMonth(@RequestBody ByPeriodRequest byPeriodRequest, HttpServletRequest httpServletRequest) {
-        return ResponseEntity.ok().body(analysisService.getByMonth(byPeriodRequest, httpServletRequest));
+    @GetMapping("/month")
+    public ResponseEntity<ListByPeriodResponse> getByMonth(HttpServletRequest httpServletRequest) {
+        return ResponseEntity.ok().body(analysisService.getByMonth(httpServletRequest));
     }
 
-    @PostMapping("/day")
-    public ResponseEntity<ListByPeriodResponse> getByDay(@RequestBody ByPeriodRequest byPeriodRequest, HttpServletRequest httpServletRequest) {
-        return ResponseEntity.ok().body(analysisService.getByDay(byPeriodRequest, httpServletRequest));
-    }
+//    @PostMapping("/day")
+//    public ResponseEntity<ListByPeriodResponse> getByDay(@RequestBody ByPeriodRequest byPeriodRequest, HttpServletRequest httpServletRequest) {
+//        return ResponseEntity.ok().body(analysisService.getByDay(byPeriodRequest, httpServletRequest));
+//    }
 
     @PostMapping("/product")
     public ResponseEntity<ListByProductResponse> getByName(@RequestBody ByProductRequest byProductRequest, HttpServletRequest httpServletRequest) {
