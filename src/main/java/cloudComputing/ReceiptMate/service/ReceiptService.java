@@ -48,11 +48,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import static org.apache.commons.io.FileUtils.copyInputStreamToFile;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -71,6 +74,9 @@ public class ReceiptService {
     private final ByProductRepository byProductRepository;
 
     private final AnalysisRepository analysisRepository;
+
+    @Value("${lambda.path}")
+    private String path;
 
     public ReceiptResponse addReceipt(MultipartFile file, HttpServletRequest httpServletRequest)
             throws IOException, URISyntaxException, InterruptedException {
@@ -111,13 +117,13 @@ public class ReceiptService {
         }).start();
 
 
-        HttpRequest request = HttpRequest.newBuilder(new URI("http://localhost:9999"))
+        HttpRequest request = HttpRequest.newBuilder(new URI(path))
                 .header("Content-Type", httpEntity.getContentType().getValue())
                 .POST(HttpRequest.BodyPublishers.ofInputStream(() -> Channels.newInputStream(pipe.source()))).build();
 
         HttpResponse<String> responseBody = httpClient.send(request, java.net.http.HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
-        String contentString = new String(responseBody.body().getBytes("EUC-KR"), StandardCharsets.UTF_8);
+        String contentString = new String(responseBody.body().getBytes());
 
         System.out.println("contentString = " + contentString);
         Map<String, Object> jsonMap = new ObjectMapper().readValue(contentString, new TypeReference<>(){});
