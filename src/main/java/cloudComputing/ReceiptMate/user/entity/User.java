@@ -53,4 +53,8 @@ public class User {
 
     @OneToOne(mappedBy = "owner")
     private Analysis analysis;
+
+    private String kakaoID;
+
+    private String kakaoToken;
 }
