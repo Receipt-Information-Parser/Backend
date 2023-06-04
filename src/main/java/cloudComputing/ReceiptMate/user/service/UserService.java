@@ -1,28 +1,36 @@
 package cloudComputing.ReceiptMate.user.service;
 
-import cloudComputing.ReceiptMate.user.dto.request.EmailRequest;
-import cloudComputing.ReceiptMate.user.dto.request.LogInRequest;
-import cloudComputing.ReceiptMate.user.dto.request.NicknameRequest;
-import cloudComputing.ReceiptMate.user.dto.request.SignUpRequest;
+import cloudComputing.ReceiptMate.auth.dto.request.TokenRequest;
+import cloudComputing.ReceiptMate.base.dto.response.BooleanResponse;
+import cloudComputing.ReceiptMate.base.exception.NotFoundException;
+import cloudComputing.ReceiptMate.user.dto.request.*;
 import cloudComputing.ReceiptMate.base.dto.response.StringResponse;
 import cloudComputing.ReceiptMate.user.dto.UserMapper;
 import cloudComputing.ReceiptMate.user.dto.response.UserResponse;
-import cloudComputing.ReceiptMate.user.exception.DuplicateEmailException;
-import cloudComputing.ReceiptMate.user.exception.DuplicateNicknameException;
-import cloudComputing.ReceiptMate.user.exception.InvalidUserException;
+import cloudComputing.ReceiptMate.user.enumeration.Authority;
+import cloudComputing.ReceiptMate.user.enumeration.Gender;
+import cloudComputing.ReceiptMate.user.exception.*;
 import cloudComputing.ReceiptMate.auth.service.AuthService;
 import cloudComputing.ReceiptMate.base.util.JwtUtil;
 import cloudComputing.ReceiptMate.auth.data.TokenInfo;
 import cloudComputing.ReceiptMate.user.entity.User;
-import cloudComputing.ReceiptMate.user.exception.InvalidPasswordException;
 import cloudComputing.ReceiptMate.user.repository.UserRepository;
 import cloudComputing.ReceiptMate.base.service.MailService;
 import cloudComputing.ReceiptMate.base.util.PasswordUtil;
 import javax.servlet.http.HttpServletRequest;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 
 @Service
@@ -34,6 +42,125 @@ public class UserService {
     private final AuthService authService;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
+
+    public JsonObject getUserDataFromKakaoToken(String token) throws InvalidKakaoTokenException {
+
+        String reqURL = "https://kapi.kakao.com/v2/user/me";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + token);
+
+        RestTemplate rt = new RestTemplate();
+        HttpEntity<MultiValueMap<String, String>> kakaoTokenRequest =
+                new HttpEntity<>(null, headers);
+
+        ResponseEntity<String> response = rt.exchange(
+                reqURL,
+                HttpMethod.GET,
+                kakaoTokenRequest,
+                String.class
+        );
+
+        String json = response.getBody();
+
+        System.out.println("json = " + json);
+        return JsonParser.parseString(json).getAsJsonObject();
+    }
+
+    @Transactional
+    public UserResponse signUpByKakao(KakaoSignUpRequest kakaoSignUpRequest) {
+
+        final String accessToken = kakaoSignUpRequest.getKakaoToken();
+
+        System.out.println("accessToken = " + accessToken);
+
+        JsonObject jsonObject = getUserDataFromKakaoToken(accessToken);
+
+        if (jsonObject.isJsonNull()) throw new InvalidKakaoTokenException();
+
+        String id = jsonObject.get("id").getAsString();
+
+        JsonObject kakaoAccount = jsonObject
+                .get("kakao_account").getAsJsonObject();
+
+        JsonObject kakaoProfile = kakaoAccount
+                .get("profile").getAsJsonObject();
+
+        boolean hasEmail = kakaoAccount
+                .get("has_email").getAsBoolean();
+
+        String name = kakaoProfile.get("nickname").getAsString();
+        Gender gender;
+        String email;
+
+        if (kakaoAccount.get("has_gender").getAsBoolean()) {
+            gender = Gender.valueOf(kakaoAccount.get("gender").getAsString().toUpperCase());
+        } else {
+            throw new NotFoundException();
+        }
+
+        if(kakaoAccount.get("has_email").getAsBoolean()){
+            email = kakaoAccount.get("email").getAsString();
+        } else {
+            throw new NotFoundException();
+        }
+
+        if (userRepository.existsByEmail(email)) {
+            throw new DuplicateEmailException();
+        }
+
+        final User user = User.builder()
+                .email(email)
+                .name(name)
+                .nickname(kakaoSignUpRequest.getNickname())
+                .gender(gender)
+                .birthday(kakaoSignUpRequest.getBirthday())
+                .profileImage(kakaoProfile.get("profile_image_url").getAsString())
+                .authority(Authority.USER)
+                .kakaoID(id)
+                .isKakao(true)
+                .build();
+
+        final User savedUser = userRepository.save(user);
+
+        UserResponse userResponse = UserMapper.INSTANCE.userToResponse(savedUser);
+        userResponse.setTokenResponse(jwtUtil.generateToken(getTokenInfo(savedUser)));
+
+        return userResponse;
+    }
+
+    public UserResponse logInByKakao(KakaoLogInRequest kakaoLogInRequest) {
+        final String kakaoToken = kakaoLogInRequest.getKakaoToken();
+
+        JsonObject jsonObject = getUserDataFromKakaoToken(kakaoToken);
+
+        if (jsonObject.isJsonNull()) throw new InvalidKakaoTokenException();
+
+        String id = jsonObject.get("id").getAsString();
+
+        JsonObject kakaoAccount = jsonObject
+                .get("kakao_account").getAsJsonObject();
+
+        String email;
+
+        if(kakaoAccount.get("has_email").getAsBoolean()){
+            email = kakaoAccount.get("email").getAsString();
+        } else {
+            throw new NotFoundException();
+        }
+
+
+        User user = userRepository.findUserByEmail(email).orElseThrow(InvalidUserException::new);
+
+        if (!user.getKakaoID().equals(id)) {
+            throw new InvalidKakaoInfoException();
+        }
+
+        UserResponse userResponse = UserMapper.INSTANCE.userToResponse(user);
+        userResponse.setTokenResponse(jwtUtil.generateToken(getTokenInfo(user)));
+
+        return userResponse;
+    }
 
     public StringResponse checkEmailAvailability(EmailRequest emailRequest) {
         if (userRepository.existsByEmail(emailRequest.getEmail())) throw new DuplicateEmailException();
@@ -57,11 +184,13 @@ public class UserService {
         signUpRequest.setPassword(authService.encodePassword(signUpRequest.getPassword()));
 
         User user = UserMapper.INSTANCE.requestToUser(signUpRequest);
+        user.setIsKakao(false);
 
         final User savedUser = userRepository.save(user);
 
         UserResponse userResponse = UserMapper.INSTANCE.userToResponse(savedUser);
         userResponse.setTokenResponse(jwtUtil.generateToken(getTokenInfo(savedUser)));
+        userResponse.setIsKakao(false);
 
         return userResponse;
     }

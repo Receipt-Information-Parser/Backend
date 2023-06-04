@@ -34,4 +34,6 @@ public class UserResponse {
 
     private String profileImage;
 
+    @Setter
+    private Boolean isKakao;
 }

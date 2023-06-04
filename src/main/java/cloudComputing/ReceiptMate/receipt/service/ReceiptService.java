@@ -310,7 +310,9 @@ public class ReceiptService {
 
     @Transactional
     public ReceiptResponse updateReceipt(HttpServletRequest httpServletRequest, ReceiptUpdateRequest receiptUpdateRequest) throws IOException {
-        Map<String, String> info = Map.copyOf(receiptRepository.findByOwnerAndId(authService.getUserByToken(httpServletRequest), receiptUpdateRequest.getId()).orElseThrow(InvalidReceiptUserException::new).getInfo());
+        Receipt toDelete = receiptRepository.findByOwnerAndId(authService.getUserByToken(httpServletRequest), receiptUpdateRequest.getId()).orElseThrow(InvalidReceiptUserException::new);
+        Map<String, String> info = Map.copyOf(toDelete.getInfo());
+        Date receiptDate = toDelete.getCreatedDate();
 
         deleteReceipt(httpServletRequest, receiptUpdateRequest.getId());
 
@@ -333,10 +335,9 @@ public class ReceiptService {
 
         Analysis analysis = analysisRepository.findByOwner(userByToken).orElseThrow(NotFoundException::new);
 
-        Date now = Date.from(Instant.now());
 
         Calendar cal = Calendar.getInstance();
-        cal.setTime(now);
+        cal.setTime(receiptDate);
         Integer year = cal.get(Calendar.YEAR);
         Integer month = cal.get(Calendar.MONTH) + 1;
         Integer date = cal.get(Calendar.DATE);
@@ -344,7 +345,7 @@ public class ReceiptService {
         Receipt receipt = Receipt.builder()
                 .owner(userByToken)
                 .detailKey(receiptKey)
-                .createdDate(now)
+                .createdDate(receiptDate)
                 .info(info)
                 .build();
 

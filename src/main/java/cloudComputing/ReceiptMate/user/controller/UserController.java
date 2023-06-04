@@ -1,14 +1,12 @@
 package cloudComputing.ReceiptMate.user.controller;
 
-import cloudComputing.ReceiptMate.user.dto.request.NicknameRequest;
+import cloudComputing.ReceiptMate.user.dto.request.*;
 import cloudComputing.ReceiptMate.user.service.UserService;
-import cloudComputing.ReceiptMate.user.dto.request.EmailRequest;
-import cloudComputing.ReceiptMate.user.dto.request.LogInRequest;
-import cloudComputing.ReceiptMate.user.dto.request.SignUpRequest;
 import cloudComputing.ReceiptMate.base.dto.response.StringResponse;
 import cloudComputing.ReceiptMate.user.dto.response.UserResponse;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.units.qual.K;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,6 +37,16 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<UserResponse> logIn(@RequestBody LogInRequest logInRequest) {
         return ResponseEntity.ok().body(userService.logIn(logInRequest));
+    }
+
+    @PostMapping("/kakao/signup")
+    public ResponseEntity<UserResponse> kakaoSignUp(@RequestBody KakaoSignUpRequest kakaoSignUpRequest) {
+        return ResponseEntity.ok().body(userService.signUpByKakao(kakaoSignUpRequest));
+    }
+
+    @PostMapping("/kakao/login")
+    public ResponseEntity<UserResponse> kakaoLogIn(@RequestBody KakaoLogInRequest kakaoLogInRequest) {
+        return ResponseEntity.ok().body(userService.logInByKakao(kakaoLogInRequest));
     }
 
     @PostMapping("/reset")
