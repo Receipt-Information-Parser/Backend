@@ -56,5 +56,5 @@ public class User {
 
     private String kakaoID;
 
-    private String kakaoToken;
+    private Boolean isKakao = false;
 }

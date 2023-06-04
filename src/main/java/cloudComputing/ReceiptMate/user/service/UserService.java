@@ -1,10 +1,14 @@
 package cloudComputing.ReceiptMate.user.service;
 
+import cloudComputing.ReceiptMate.auth.dto.request.TokenRequest;
 import cloudComputing.ReceiptMate.base.dto.response.BooleanResponse;
+import cloudComputing.ReceiptMate.base.exception.NotFoundException;
 import cloudComputing.ReceiptMate.user.dto.request.*;
 import cloudComputing.ReceiptMate.base.dto.response.StringResponse;
 import cloudComputing.ReceiptMate.user.dto.UserMapper;
 import cloudComputing.ReceiptMate.user.dto.response.UserResponse;
+import cloudComputing.ReceiptMate.user.enumeration.Authority;
+import cloudComputing.ReceiptMate.user.enumeration.Gender;
 import cloudComputing.ReceiptMate.user.exception.*;
 import cloudComputing.ReceiptMate.auth.service.AuthService;
 import cloudComputing.ReceiptMate.base.util.JwtUtil;
@@ -64,7 +68,7 @@ public class UserService {
     }
 
     @Transactional
-    public BooleanResponse signUpByKakao(KakaoSignUpRequest kakaoSignUpRequest) {
+    public UserResponse signUpByKakao(KakaoSignUpRequest kakaoSignUpRequest) {
 
         final String accessToken = kakaoSignUpRequest.getKakaoToken();
 
@@ -85,28 +89,77 @@ public class UserService {
         boolean hasEmail = kakaoAccount
                 .get("has_email").getAsBoolean();
 
-        String email = "";
+        String name = kakaoProfile.get("nickname").getAsString();
+        Gender gender;
+        String email;
 
-        if(hasEmail){
+        if (kakaoAccount.get("has_gender").getAsBoolean()) {
+            gender = Gender.valueOf(kakaoAccount.get("gender").getAsString().toUpperCase());
+        } else {
+            throw new NotFoundException();
+        }
+
+        if(kakaoAccount.get("has_email").getAsBoolean()){
             email = kakaoAccount.get("email").getAsString();
+        } else {
+            throw new NotFoundException();
         }
 
         if (userRepository.existsByEmail(email)) {
-            return new BooleanResponse(false);
+            throw new DuplicateEmailException();
         }
 
         final User user = User.builder()
-                .name(kakaoProfile.get("nickname").getAsString())
-                .kakaoID(id)
-                .authority(Authority.GUEST)
-                .picturePath(kakaoProfile.get("profile_image_url").getAsString())
-                .university(University.valueOf(signUpRequest.getUniversity()))
                 .email(email)
+                .name(name)
+                .nickname(kakaoSignUpRequest.getNickname())
+                .gender(gender)
+                .birthday(kakaoSignUpRequest.getBirthday())
+                .profileImage(kakaoProfile.get("profile_image_url").getAsString())
+                .authority(Authority.USER)
+                .kakaoID(id)
+                .isKakao(true)
                 .build();
 
         final User savedUser = userRepository.save(user);
 
-        return new BooleanResponse(true);
+        UserResponse userResponse = UserMapper.INSTANCE.userToResponse(savedUser);
+        userResponse.setTokenResponse(jwtUtil.generateToken(getTokenInfo(savedUser)));
+
+        return userResponse;
+    }
+
+    public UserResponse logInByKakao(KakaoLogInRequest kakaoLogInRequest) {
+        final String kakaoToken = kakaoLogInRequest.getKakaoToken();
+
+        JsonObject jsonObject = getUserDataFromKakaoToken(kakaoToken);
+
+        if (jsonObject.isJsonNull()) throw new InvalidKakaoTokenException();
+
+        String id = jsonObject.get("id").getAsString();
+
+        JsonObject kakaoAccount = jsonObject
+                .get("kakao_account").getAsJsonObject();
+
+        String email;
+
+        if(kakaoAccount.get("has_email").getAsBoolean()){
+            email = kakaoAccount.get("email").getAsString();
+        } else {
+            throw new NotFoundException();
+        }
+
+
+        User user = userRepository.findUserByEmail(email).orElseThrow(InvalidUserException::new);
+
+        if (!user.getKakaoID().equals(id)) {
+            throw new InvalidKakaoInfoException();
+        }
+
+        UserResponse userResponse = UserMapper.INSTANCE.userToResponse(user);
+        userResponse.setTokenResponse(jwtUtil.generateToken(getTokenInfo(user)));
+
+        return userResponse;
     }
 
     public StringResponse checkEmailAvailability(EmailRequest emailRequest) {
@@ -131,11 +184,13 @@ public class UserService {
         signUpRequest.setPassword(authService.encodePassword(signUpRequest.getPassword()));
 
         User user = UserMapper.INSTANCE.requestToUser(signUpRequest);
+        user.setIsKakao(false);
 
         final User savedUser = userRepository.save(user);
 
         UserResponse userResponse = UserMapper.INSTANCE.userToResponse(savedUser);
         userResponse.setTokenResponse(jwtUtil.generateToken(getTokenInfo(savedUser)));
+        userResponse.setIsKakao(false);
 
         return userResponse;
     }
