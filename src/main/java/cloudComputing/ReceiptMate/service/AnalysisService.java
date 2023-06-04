@@ -22,9 +22,7 @@ import org.springframework.stereotype.Service;
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Date;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -143,5 +141,13 @@ public class AnalysisService {
         listByProductResponse.setByProducts(byProductResponses);
 
         return listByProductResponse;
+    }
+
+    public ByProductNameResponse getNames(HttpServletRequest httpServletRequest) {
+        List<String> allNamesByAnalysis = byProductRepository.getAllNamesByAnalysis(getAnalysis(httpServletRequest));
+
+        List<String> collect = new ArrayList<>(new HashSet<>(allNamesByAnalysis));
+
+        return new ByProductNameResponse(collect);
     }
 }

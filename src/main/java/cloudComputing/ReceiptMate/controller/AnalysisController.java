@@ -38,13 +38,14 @@ public class AnalysisController {
         return ResponseEntity.ok().body(analysisService.getByMonth(httpServletRequest));
     }
 
-//    @PostMapping("/day")
-//    public ResponseEntity<ListByPeriodResponse> getByDay(@RequestBody ByPeriodRequest byPeriodRequest, HttpServletRequest httpServletRequest) {
-//        return ResponseEntity.ok().body(analysisService.getByDay(byPeriodRequest, httpServletRequest));
-//    }
 
     @PostMapping("/product")
     public ResponseEntity<ListByProductResponse> getByName(@RequestBody ByProductRequest byProductRequest, HttpServletRequest httpServletRequest) {
         return ResponseEntity.ok().body(analysisService.getByName(byProductRequest, httpServletRequest));
+    }
+
+    @GetMapping("/names")
+    public ResponseEntity<ByProductNameResponse> getNames(HttpServletRequest httpServletRequest) {
+        return ResponseEntity.ok().body(analysisService.getNames(httpServletRequest));
     }
 }
