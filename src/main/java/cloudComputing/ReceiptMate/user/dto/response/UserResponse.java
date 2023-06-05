@@ -33,7 +33,4 @@ public class UserResponse {
     private TokenResponse tokenResponse;
 
     private String profileImage;
-
-    @Setter
-    private Boolean isKakao;
 }
