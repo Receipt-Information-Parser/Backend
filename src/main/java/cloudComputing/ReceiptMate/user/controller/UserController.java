@@ -1,10 +1,13 @@
 package cloudComputing.ReceiptMate.user.controller;
 
+import cloudComputing.ReceiptMate.base.dto.response.BooleanResponse;
 import cloudComputing.ReceiptMate.user.dto.request.*;
 import cloudComputing.ReceiptMate.user.service.UserService;
 import cloudComputing.ReceiptMate.base.dto.response.StringResponse;
 import cloudComputing.ReceiptMate.user.dto.response.UserResponse;
 import javax.servlet.http.HttpServletRequest;
+
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.checkerframework.checker.units.qual.K;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +50,11 @@ public class UserController {
     @PostMapping("/kakao/login")
     public ResponseEntity<UserResponse> kakaoLogIn(@RequestBody KakaoLogInRequest kakaoLogInRequest) {
         return ResponseEntity.ok().body(userService.logInByKakao(kakaoLogInRequest));
+    }
+
+    @GetMapping("/kakao/exist/{id}")
+    public ResponseEntity<BooleanResponse> kakaoExist(@PathVariable("id") String id) {
+        return ResponseEntity.ok().body(userService.existByKakaoId(id));
     }
 
     @PostMapping("/reset")

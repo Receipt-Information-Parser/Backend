@@ -190,7 +190,6 @@ public class UserService {
 
         UserResponse userResponse = UserMapper.INSTANCE.userToResponse(savedUser);
         userResponse.setTokenResponse(jwtUtil.generateToken(getTokenInfo(savedUser)));
-        userResponse.setIsKakao(false);
 
         return userResponse;
     }
@@ -244,5 +243,9 @@ public class UserService {
 
     private TokenInfo getTokenInfo(User user) { // 이거 JwtUtil로 돌릴지
         return new TokenInfo(user.getId(), user.getEmail(), user.getAuthority());
+    }
+
+    public BooleanResponse existByKakaoId(String id) {
+        return new BooleanResponse(userRepository.existsByKakaoID(id));
     }
 }
